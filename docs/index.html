@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Quill.Api</title>
+  <link rel="icon" type="image/x-icon" href="./favcon.png">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+  <meta name="description" content="a simple api to interact with twitter in a free mater to avoid paying for api accses. In development no stable releace. NOT AFFILIATED WITH X(formily twitter) IN ANY WAY.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+  <!-- darklight -->
+  <link rel="stylesheet"href="//cdn.jsdelivr.net/npm/docsify-darklight-theme@latest/dist/style.min.css" title="docsify-darklight-theme"type="text/css"/>
+  <!-- font awsome -->
+  <link rel="stylesheet" href="//unpkg.com/@fortawesome/fontawesome-free/css/fontawesome.css" />
+  <link rel="stylesheet" href="//unpkg.com/@fortawesome/fontawesome-free/css/brands.css" />
+  <link rel="stylesheet" href="//unpkg.com/@fortawesome/fontawesome-free/css/regular.css" />
+  <link rel="stylesheet" href="//unpkg.com/@fortawesome/fontawesome-free/css/solid.css" />
+  <!-- change log thing -->
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify-changelog-plugin@latest/dist/style.css"/>
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css"/>
+  <!-- sidbar colaps arow -->
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify-sidebar-collapse/dist/sidebar.min.css" />
+
+  <!-- Custom CSS! -->
+  <style>
+    .thick-s{
+      font-weight: 1000;
+    }
+    .gradient-blodiMimosa{
+      background-image: linear-gradient(90deg, #d53369 0%, #daae51 100%); 
+      
+    }
+    .gradient-AquaSpray{
+      background-image: linear-gradient(90deg, #00d2ff 0%, #3a47d5 100%);
+      
+    }
+    .gradient-PeachSunnset{
+      background-image: linear-gradient(45deg, #FBAB7E 0%, #F7CE68 100%);
+      
+    }
+    .gradient-LerpleBerple{
+      background-image: linear-gradient(62deg, #8EC5FC 0%, #E0C3FC 100%);
+      
+    }
+    .clip-txt{
+      background-clip: text; 
+      color: transparent; 
+    }
+    .clip-border{
+      background-clip: border-box; 
+      color: transparent; 
+    }
+    .clip-txt-stroke{
+      background-clip: stroke; 
+      color: transparent; 
+      border: 2px solid; 
+    }
+    .txt-borderThick{
+      -webkit-text-stroke: 2px #000; 
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+
+  <!-- Main script! -->
+  <script>
+    window.$docsify = {
+
+    // Theam Config
+    themeColor: '#1DA1F2',
+
+      darklightTheme: {
+        siteFont : 'Roboto, sans-serif',
+        defaultTheme : 'light | dark',
+        codeFontFamily : 'Roboto Mono, Monaco, courier, monospace',
+
+        light: {
+            accent: '#1572ac',
+            toogleBackground : '#091a28',
+            background: '#ffffff',
+            textColor: '272f42',
+            codeTextColor : '#525252',
+            codeBackgroundColor : '#f8f8f8',
+            borderColor : 'rgba(0, 0, 0, 0.07)',
+            blockQuoteColor : '#858585',
+            highlightColor : '#d22778',
+            sidebarSublink : '#b4b4b4',
+            codeTypeColor : '#091a28',
+            coverBackground : 'linear-gradient(146deg, rgba(90,91,216,1) 0%, rgba(110,223,244,1) 100%)',
+            toogleImage : 'url(https://cdn.jsdelivr.net/npm/docsify-darklight-theme@latest/icons/moon.svg)'
+        },
+        dark: {
+            accent: '#1DA1F2',
+            toogleBackground : '#ffffff',
+            background: '#091a28',
+            textColor: '#c2c3c4',
+            codeTextColor : '#ffffff',
+            codeBackgroundColor : '#0e2233',
+            borderColor : '#0d2538',
+            blockQuoteColor : '#858585',
+            highlightColor : '#d22778',
+            sidebarSublink : '#b4b4b4',
+            codeTypeColor : '#ffffff',
+            coverBackground : 'linear-gradient(146deg, rgba(90,91,216,1) 0%, rgba(110,223,244,1) 100%)',
+            toogleImage : 'url(https://cdn.jsdelivr.net/npm/docsify-darklight-theme@latest/icons/sun.svg)'
+        }
+            
+      },
+
+      
+
+    // Docsify Config
+      name: '',
+      repo: '',
+      loadSidebar: true,
+      subMaxLevel: 3,
+      coverpage: true,
+    
+    // Serch config
+      search: 'auto',
+
+      search: [
+      '/',                   // => /README.md
+      // JAVASCRIPT \/
+      '/pages/Javascript/QuickStart.md',   // => /QuickStart
+      '/pages/Javascript/refrences.md',   // => /refrences
+      // DOTNET \/
+      '/pages/dotnet/quickstart',       // => /dotnet
+      '/pages/dotnet/methods',       // => /dotnet
+      '/pages/dotnet/eheheh',       // => /dotnet
+      ],
+
+      // Localization
+      placeholder: {
+        '/': 'Type to search :fa-solid fa-magnifying-glass:',
+        '/es-es/': 'Escribe para buscar',
+      },
+
+      noData: {
+        '/': 'No Results',
+        '/es-es/': 'No hay resultados',
+      },
+
+      // Use different indexes for path prefixes (namespaces).
+      // NOTE: Only works in 'auto' mode.
+      //
+      // When initialiazing an index, we look for the first path from the sidebar.
+      // If it matches the prefix from the list, we switch to the corresponding index.
+      pathNamespaces: ['/v1, /v2'],
+
+      pathNamespaces: /^\/(v1|v2)/,
+
+      // changelog config
+      loadNavbar : false, // IMPORTANT
+      changelog : '../ChangeLog.md' // path of your changelog, it can be remote as well
+
+    }
+
+    // genarate random background gradient
+    var gradient = [
+      'linear-gradient(146deg, rgba(90,91,216,1) 0%, rgba(110,223,244,1) 100%)', 
+      'linear-gradient(146deg, rgba(90,91,216,1) 0%, rgba(110,223,244,1) 100%)', 
+      'linear-gradient(62deg, #8EC5FC 0%, #E0C3FC 100%)', 
+      'linear-gradient(90deg, #00d2ff 0%, #3a47d5 100%)'
+    ];
+    function GanBack(){
+      let out = gradient[Math.floor(Math.random() * gradient.length)];
+      return out;
+    }
+
+  </script>
+
+  <!-- Docsify v4 -->
+  <script src="//cdn.jsdelivr.net/npm/docsify@4"></script>
+  <script src="//cdn.jsdelivr.net/npm/docsify-darklight-theme@latest/dist/index.min.js"type="text/javascript"></script>
+
+  <!-- Plugins  -->
+  <script src="//cdn.jsdelivr.net/npm/docsify-copy-code/dist/docsify-copy-code.min.js"></script> <!-- coppy code plugin -->
+  <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/search.min.js"></script> <!-- Search Plugin -->
+  <script src="//unpkg.com/docsify-fontawesome/dist/docsify-fontawesome.min.js"></script> <!-- Font Awesome Plugin -->
+  <script src="https://cdn.jsdelivr.net/npm/docsify-changelog-plugin@latest/dist/index.js"></script> <!-- Change Log Plugin -->
+  <script src="//cdn.jsdelivr.net/npm/docsify-sidebar-collapse/dist/docsify-sidebar-collapse.min.js"></script> <!-- Sidebar Collapse Plugin -->
+
+
+</body>
+</html>

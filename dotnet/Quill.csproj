@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Authors>DogeDoge</Authors>
+    <Company>Doge Productions</Company>
+    <Title>Quill.NET</Title>
+    <PackageTags>Twitter, X, webscrape, Selenium, webdriver, api, elon musk, tweet, post, social media, webscraper</PackageTags>
+    <RepositoryUrl>https://github.com/Doge-Productions/Quill-Api/</RepositoryUrl>
+    <Description>An easy way to interact with Twitter (X) using webscraping through selenium.</Description>
+    <PackageProjectUrl>https://github.com/Doge-Productions/Quill-Api/</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>icon.jpg</PackageIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DotNetSeleniumExtras.WaitHelpers" Version="3.11.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Selenium.Support" Version="4.9.1" />
+    <PackageReference Include="Selenium.WebDriver" Version="4.9.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="icon.jpg">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+
+</Project>

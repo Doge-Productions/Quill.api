@@ -158,7 +158,7 @@ class Client extends BaseClient {
         {
             this.emit(Events.Debug, `[Client] Attempting login`);
 
-            this.driver.get('https://twitter.com/i/flow/login', (err) => {
+            this.driver.get('https://x.com/i/flow/login', (err) => {
                 if (err) 
                 {
                     this.emit(Events.Debug, `    Driver Get Error: ${err}`);
@@ -169,7 +169,7 @@ class Client extends BaseClient {
                 }
             });
 
-            this.driver.get('https://twitter.com/home', (err) => {
+            this.driver.get('https://x.com/home', (err) => {
               if (err) {
                   this.emit(Events.Debug, `    Driver Get Error: ${err}`);
               } else {
@@ -180,7 +180,7 @@ class Client extends BaseClient {
             if(!options.cookies) { // Load without cookies
               this.driver.wait(until.elementLocated(By.xpath("(//input[@name='text'])[1]"))).then((element) => {
                 this.emit(Events.Debug, `[Client] Going to Twitter home`);
-                this.driver.get("https://twitter.com", (err) => {
+                this.driver.get("https://x.com", (err) => {
                   if (err) {
                       this.emit(Events.Debug, `Driver Get Error: ${err}`);
                   } else {
@@ -189,9 +189,9 @@ class Client extends BaseClient {
 
                   }).then(() => {
                     this.emit(Events.Debug, `[client] Refreshing`);
-                      this.driver.get("https://twitter.com/home").then(() => {
-                          this.driver.get("https://twitter.com/home").then(() => {
-                              this.driver.get("https://twitter.com/home").then(() => {
+                      this.driver.get("https://x.com/home").then(() => {
+                          this.driver.get("https://x.com/home").then(() => {
+                              this.driver.get("https://x.com/home").then(() => {
                                   this.emit(Events.ClientReady)
                                 });
                             });
@@ -248,7 +248,7 @@ class Client extends BaseClient {
                   });
 
                     //wait for login to be completed
-                  this.driver.wait(until.urlIs("https://twitter.com/home")).then(() => {
+                  this.driver.wait(until.urlIs("https://x.com/home")).then(() => {
                     this.emit(Events.Debug, `Saving Cookies...`);
 
                     this.driver.manage().getCookies().then((cookies) => {
@@ -265,10 +265,10 @@ class Client extends BaseClient {
 
                   this.emit(Events.Debug, `[Client] Reloading Page`);   
 
-                  this.driver.get("https://twitter.com/home").then(() => {
-                    this.driver.get("https://twitter.com/home").then(() => {
-                      this.driver.get("https://twitter.com/home").then(() => {
-                        this.driver.get("https://twitter.com/home").then(() => {
+                  this.driver.get("https://x.com/home").then(() => {
+                    this.driver.get("https://x.com/home").then(() => {
+                      this.driver.get("https://x.com/home").then(() => {
+                        this.driver.get("https://x.com/home").then(() => {
 
                           this.emit(Events.Debug, `[Client] Client Sucsefully Loaded with cookies!`);   
                           this.emit(Events.ClientReady);
@@ -337,7 +337,7 @@ class Client extends BaseClient {
               });
 
                 //wait for login to be completed
-              this.driver.wait(until.urlIs("https://twitter.com/home")).then(() => {
+              this.driver.wait(until.urlIs("https://x.com/home")).then(() => {
                 this.emit(Events.Debug, `Saving Cookies...`);
 
                 this.driver.manage().getCookies().then((cookies) => {
@@ -397,7 +397,7 @@ class Client extends BaseClient {
 
     Send(Data = []) {    
         this.emit(Events.Debug, `Composing New Tweet...`);
-        this.driver.get("https://twitter.com/compose/tweet").then(() => {
+        this.driver.get("https://x.com/compose/tweet").then(() => {
 
           for(let i = 0; i <= Data.length; i++){
     
@@ -470,7 +470,7 @@ class Client extends BaseClient {
     draft_Tweet() {
         return new Promise((resolve, reject) => {
             this.emit(Events.Debug, `Composing New Tweet...`);
-            this.driver.get("https://twitter.com/compose/tweet").then(() => {
+            this.driver.get("https://x.com/compose/tweet").then(() => {
               resolve();
             });
           });

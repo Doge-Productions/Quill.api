@@ -23,15 +23,11 @@ class post extends EventEmitter{
     
         return new Promise((resolve, reject) => {
 
-           
-
                 this.client.emit(Events.Debug, `[Post Manager] Opening new compose tab.`);
                 // open new tab for tweet
                 this.driver.get('https://twitter.com/compose/tweet').then(() => {
                     resolve();
-                });
-                
-        
+                });           
 
         });
   

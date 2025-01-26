@@ -22,4 +22,9 @@ export class List<T>
         return this.items[index];
     }
 
+    public [Symbol.iterator](): Iterator<T> {
+
+        return this.items[Symbol.iterator]();
+
+    }
 }

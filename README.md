@@ -12,7 +12,7 @@
 ## Documentation
 
 - On the official website or the GitHub page.
-[DOCKS](https://doge-productions.github.io/Quil.api/docks)
+[DOCKS](https://doge-productions.github.io/Quill.api/#/)
 
 ## Roadmap
 

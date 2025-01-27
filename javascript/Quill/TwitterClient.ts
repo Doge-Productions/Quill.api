@@ -6,6 +6,7 @@ import { rejects } from 'assert';
 import { Actions, WebDriver, until, Builder, By } from 'selenium-webdriver';
 import DriverCreation from './DriverCreation';
 
+
 export default class TwitterClient implements ITwitterClient
 {
 
@@ -104,20 +105,66 @@ export default class TwitterClient implements ITwitterClient
         {
             driver?.navigate().to('https://x.com/i/flow/login');
             driver?.navigate().refresh();
-            var actions = new Actions(driver!);
+            var actions:Actions = new Actions(driver!);
             await driver?.wait(until.elementLocated(By.xpath("//input[@name='text']")), 10000);
             await driver?.wait(until.elementIsEnabled(driver?.findElement(By.xpath("//input[@name='text']"))), 10000);
-        }
-        
 
+            var usernameFill = driver?.findElement(By.xpath("//input[@name='text']"));
+            await usernameFill.click();
+            await usernameFill.sendKeys(username1 || this.username);
+            
+            var nextBtn = driver?.findElement(By.xpath("//span[contains(text(), 'Next)]"));
+            nextBtn.click();
+
+                // \/ Wait untill the password field is visible
+            await driver?.wait(until.elementLocated(By.xpath("//input(@name='password']")) || until.elementLocated(By.xpath("//div[@class='css-1dbjc4n r-knv0ih']//span[@class='css-901oao css-16my406 r-poiln3 r-bcqeeo r-qvutc0']//span[1]")), 10000);
+
+            if (driver?.findElement(By.xpath("//div[@class='css-1dbjc4n r-knv0ih']//span[@class='css-901oao css-16my406 r-poiln3 r-bcqeeo r-qvutc0']//span[1]")) != null)
+            {
+                // \/ If we are prompted with the suspicious activity screen
+                var altInput = driver?.findElement(By.xpath("//input[@name='text']"));
+                await altInput.click();
+                await altInput.sendKeys(username2 || this.username2);
+                
+                var nextBtn2 = driver?.findElement(By.xpath("//span[contains(text(),'Next')]"));
+                nextBtn2.click();
+            }
+
+            await driver?.wait(until.elementLocated(By.xpath("//input[@name='password']")), 10000);
+            await driver?.wait(until.elementIsEnabled(driver?.findElement(By.xpath("//input[@name='password']"))), 10000);
+            var passwordFill = driver?.findElement(By.xpath("//input[@name='password']"));
+            await actions.move({origin: passwordFill});
+            await passwordFill.click();
+            await passwordFill.sendKeys(accountPassword || this.password);
+
+            await driver?.wait(until.elementLocated(By.css(".css-175oi2r.r-sdzlij.r-1phboty.r-rs99b7.r-lrvibr.r-19yznuf.r-64el8z.r-1dye5f7.r-1loqt21.r-o7ynqc.r-6416eg.r-1ny4l3l")), 10000);
+            var RealLoginButton = driver?.findElement(By.css(".css-175oi2r.r-sdzlij.r-1phboty.r-rs99b7.r-lrvibr.r-19yznuf.r-64el8z.r-1dye5f7.r-1loqt21.r-o7ynqc.r-6416eg.r-1ny4l3l"));
+            await RealLoginButton.click();
+
+            this.cookies = JSON.parse(await driver?.manage().getCookies().toString());
+
+            registeredCookies.set(username1 || this.username, this.cookies);
+            fs.writeFileSync(path.join(__dirname, 'cookies.json'), JSON.stringify(registeredCookies, null, 2));
+        }
+        catch (err: string | any)
+        {
+            rejects(err);
+        }
+        finally
+        {
+            if (driver != null)
+                driver.quit();
+            else
+                resolve('Driver is null');
+        }
     }
     
 
-    // public CreateCompose() :ConposePage
-    // {
-    //     if (this.pages == null)
-    //         this.pages = new();
-    // }
+    public CreateCompose() :ConposePage
+    {
+        if (this.pages == null)
+            this.pages = new();
+    }
 
 }
 

@@ -10,13 +10,16 @@ namespace Quill
 {
     public static class DriverCreation
     {
-        public static BrowserType type = BrowserType.Chrome;
+        public static BrowserType type = BrowserType.Firefox;
 
         private static List<string> flags = new List<string>();
 
         public static DriverOptions options = new DriverOptions();
 
-        public static string executablePath { get; private set; }
+        public static string ExecutablePath { get; private set; }
+
+        public static LogLevel logLevel { get; set; }
+        public static bool SuppressInitialDiagnosticInformation { get; set; }
 
         public static void AddFlag(string flag)
         {
@@ -25,7 +28,7 @@ namespace Quill
 
         public static void SetExecutablePath(string path)
         {
-            executablePath = path;
+            ExecutablePath = path;
         }
 
         public static void SetBrowserType(BrowserType type)
@@ -47,10 +50,10 @@ namespace Quill
                         ChromeOptions cOptions = new ChromeOptions();
                         ChromeDriverService cDriverService;
 
-                        if (executablePath == string.Empty)
+                        if (ExecutablePath == string.Empty)
                             cDriverService = ChromeDriverService.CreateDefaultService();
                         else
-                            cDriverService = ChromeDriverService.CreateDefaultService(executablePath);
+                            cDriverService = ChromeDriverService.CreateDefaultService(ExecutablePath);
 
                         if (options.headless)
                         {
@@ -61,8 +64,8 @@ namespace Quill
                         }
                         if (!options.loadImages)
                             cOptions.AddArgument("blink-settings=imagesEnabled=false");
-
-                        cOptions.AddArgument("--window-size=2560,1440");
+                        
+                        cOptions.AddArgument("--window-size=2560,1440");                        
 
                         foreach (string flag in flags)
                         {
@@ -70,7 +73,7 @@ namespace Quill
                         }
 
                         cDriverService.HideCommandPromptWindow = true;
-                        cDriverService.SuppressInitialDiagnosticInformation = true;
+                        cDriverService.SuppressInitialDiagnosticInformation = SuppressInitialDiagnosticInformation;
                         return new ChromeDriver(cDriverService, cOptions);
                     }
                 case BrowserType.InternetExplorer:
@@ -93,6 +96,7 @@ namespace Quill
                         }
 
                         ieDriverService.HideCommandPromptWindow = true;
+
 
                         return new InternetExplorerDriver(ieDriverService, ieOptions);
                     }
@@ -135,10 +139,8 @@ namespace Quill
                         FirefoxOptions fOptions = new FirefoxOptions();
                         var fDriverService = FirefoxDriverService.CreateDefaultService();
 
-                        if (executablePath == string.Empty)
-                            fDriverService = FirefoxDriverService.CreateDefaultService();
-                        else
-                            fDriverService = FirefoxDriverService.CreateDefaultService(executablePath);
+                        if (ExecutablePath != string.Empty)
+                            fDriverService = FirefoxDriverService.CreateDefaultService(ExecutablePath);                                                
 
                         if (options.headless)
                             fOptions.AddArgument("--headless");
@@ -150,9 +152,17 @@ namespace Quill
                             fOptions.AddArgument(flag);
                         }
 
-                        fOptions.LogLevel = FirefoxDriverLogLevel.Fatal;
+                        if(logLevel != LogLevel.None)
+                            fOptions.LogLevel = (FirefoxDriverLogLevel)logLevel;
+                        else
+                        {
+                            Environment.SetEnvironmentVariable("MOZ_LOG", ""); 
+                            Environment.SetEnvironmentVariable("MOZ_LOG_FILE", "/dev/null");
+                        }
+                        //fOptions.LogLevel = FirefoxDriverLogLevel.Fatal;
 
                         fDriverService.HideCommandPromptWindow = true;
+                        fDriverService.SuppressInitialDiagnosticInformation = SuppressInitialDiagnosticInformation;
                         return new FirefoxDriver(fDriverService, fOptions);
                     }
             }
@@ -202,6 +212,58 @@ namespace Quill
         /// Not tested. All flags will be ignored
         /// </summary>
         Safari,
+
+        /// <summary>
+        /// The best option for most use cases
+        /// </summary>
         Firefox
+    }
+
+    public enum LogLevel
+    {
+        /// <summary>
+        /// Represents the Trace value, the most detailed logging level available.
+        /// </summary>        
+        Trace,
+        
+        /// <summary>
+        /// Represents the Debug value
+        /// </summary>
+        Debug,        
+
+        /// <summary>
+        /// Represents the Config value
+        /// </summary>
+        Config,
+        
+        /// <summary>
+        /// Represents the Info value
+        /// </summary>
+        Info,
+        
+        /// <summary>
+        /// Represents the Warn value
+        /// </summary>
+        Warn,
+        
+        /// <summary>
+        /// Represents the Error value
+        /// </summary>
+        Error,
+        
+        /// <summary>         
+        /// Represents the Fatal value, the least detailed logging level available.
+        /// </summary>
+        Fatal,        
+          
+        /// <summary>
+        /// Represents that the logging value is unspecified, and should be the default level.
+        /// </summary>
+        Default,
+
+        /// <summary>
+        /// Makes the driver's output pipe to a null address
+        /// </summary>
+        None,
     }
 }

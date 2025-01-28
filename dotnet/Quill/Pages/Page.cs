@@ -1,4 +1,5 @@
-﻿using OpenQA.Selenium;
+﻿//using Newtonsoft.Json;
+using OpenQA.Selenium;
 using OpenQA.Selenium.Firefox;
 using System;
 using System.Collections.Generic;
@@ -7,6 +8,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace Quill.Pages
@@ -40,13 +42,20 @@ namespace Quill.Pages
 
         public bool sleeping { get; protected set; }
 
-        protected Page(TwitterClient client)
+        protected Page(TwitterClient client) : this(client, "https://x.com")
         {
-            this.cookies = client.cookies;
+            
+        }
+
+
+        protected Page(TwitterClient client, string baseUrl)
+        {
+            this.baseUrl = baseUrl;
+            cookies = client.cookies;
             driver = DriverCreation.CreateNew();
             pageType = PageType.None;
             this.client = client;
-            driver.Navigate().GoToUrl("https://twitter.com");
+            driver.Navigate().GoToUrl("https://x.com");
 
             var savedCookies = JsonSerializer.Deserialize<List<CustomCookie>>(cookies);
 
@@ -56,11 +65,11 @@ namespace Quill.Pages
                 driver.Manage().Cookies.AddCookie(seleniumCookie);
             }
 
-            driver.Navigate().GoToUrl("https://twitter.com");
-            driver.Navigate().GoToUrl("https://twitter.com");
-            driver.Navigate().GoToUrl("https://twitter.com");
-            driver.Navigate().GoToUrl("https://twitter.com");
-            driver.Navigate().GoToUrl("https://twitter.com");
+            for (int i = 0; driver.Url != baseUrl && i < 10; i++)
+            {
+                driver.Navigate().GoToUrl(baseUrl);
+                //Thread.Sleep(50);
+            }
 
         }
 
@@ -70,7 +79,7 @@ namespace Quill.Pages
             driver = DriverCreation.CreateNew();
             pageType = PageType.None;
             this.client = client;
-            driver.Navigate().GoToUrl("https://twitter.com");
+            driver.Navigate().GoToUrl("https://x.com/");
 
             var savedCookies = JsonSerializer.Deserialize<List<CustomCookie>>(cookies);
 
@@ -80,17 +89,16 @@ namespace Quill.Pages
                 driver.Manage().Cookies.AddCookie(seleniumCookie);
             }
 
-            driver.Navigate().GoToUrl("https://twitter.com");
-            driver.Navigate().GoToUrl("https://twitter.com");
-            driver.Navigate().GoToUrl("https://twitter.com");
-            driver.Navigate().GoToUrl("https://twitter.com");
-            driver.Navigate().GoToUrl("https://twitter.com");
 
+            for (int i = 0; driver.Url != "https://x.com/home" && i < 10; i++)
+            {
+                driver.Navigate().GoToUrl("https://x.com/");                
+            }           
         }
 
         public void Reload()
         {
-            if (driver.Url != null)
+            if (driver != null && driver.Url != null)
                 driver.Navigate().Refresh();
         }
 
@@ -104,7 +112,7 @@ namespace Quill.Pages
         {
             try
             {
-                if (client.pages.Contains(this))
+                if (client.pages != null && client.pages.Contains(this))
                     client.pages.Remove(this);
                 if (driver != null)
                 {
@@ -119,7 +127,7 @@ namespace Quill.Pages
         /// This will close the webdriver while keeping this class alive
         /// </summary>
         /// <remarks>
-        /// This will 
+        /// Will slow down the next action substantially as the page will have to be reinstated
         /// </remarks>
         public void SleepDriver()
         {
@@ -140,19 +148,35 @@ namespace Quill.Pages
         ~Page()
         {
             Close();
-            driver.Close();
-            driver.Dispose();
+            if (driver != null)
+            {
+                driver.Close();
+                driver.Dispose();
+            }
         }
     }
 
     internal class CustomCookie
     {
+        [JsonPropertyName("name")]
         public string Name { get; set; }
+
+        [JsonPropertyName("value")]
         public string Value { get; set; }
+
+        [JsonPropertyName("domain")]
         public string Domain { get; set; }
+
+        [JsonPropertyName("path")]
         public string Path { get; set; }
-        public DateTime? Expiry { get; set; }
+
+        [JsonPropertyName("expiry")]
+        public long Expiry { get; set; }
+
+        [JsonPropertyName("secure")]
         public bool Secure { get; set; }
+
+        [JsonPropertyName("httpOnly")]
         public bool IsHttpOnly { get; set; }
 
         public CustomCookie() { }
@@ -163,11 +187,26 @@ namespace Quill.Pages
             Value = cookie.Value;
             Domain = cookie.Domain;
             Path = cookie.Path;
-            Expiry = cookie.Expiry;
+            if(cookie.Expiry != null)
+                Expiry = cookie.Expiry.Value.ToFileTime();
             Secure = cookie.Secure;
             IsHttpOnly = cookie.IsHttpOnly;
         }
 
-        public Cookie ToSeleniumCookie => new Cookie(Name, Value, Domain, Path, Expiry);
+        public Cookie ToSeleniumCookie
+        {
+            get
+            {
+                DateTime? expiry = DateTime.FromFileTime(Expiry);
+
+                if(expiry.Value.ToFileTime() == 0)
+                {
+                    expiry = DateTime.Now;
+                    expiry = expiry.Value.Add(TimeSpan.FromDays(365));
+                }
+
+                return new Cookie(Name, Value, Domain, Path, expiry);
+            }
+        }
     }
 }

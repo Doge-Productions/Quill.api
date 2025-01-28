@@ -16,6 +16,8 @@ using SeleniumExtras.WaitHelpers;
 using System.Globalization;
 using System.Net;
 using OpenQA.Selenium.Interactions;
+using System;
+using System.ComponentModel.Design;
 
 namespace Quill
 {
@@ -62,6 +64,11 @@ namespace Quill
             password = accountPassword;
         }
 
+        ~TwitterClient()
+        {
+            Close();
+        }
+
         /// <summary>
         /// Logins you into the client
         /// </summary>
@@ -85,13 +92,13 @@ namespace Quill
             username = username1;
             password = accountPassword;
 
-            Dictionary<string, string> registeredCookies = new Dictionary<string, string>();
+            Dictionary<string, string> ?registeredCookies = new Dictionary<string, string>();
 
-            if (File.Exists(Path.Combine(Directory.GetCurrentDirectory(), "cookies.json")))
+            if (File.Exists(Path.Combine(System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "cookies.json")))
             {
                 try
                 {
-                    using (var mmhCookies = File.OpenText(Path.Combine(Directory.GetCurrentDirectory(), "cookies.json")))
+                    using (var mmhCookies = File.OpenText(Path.Combine(System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "cookies.json")))
                     {
                         registeredCookies = JsonConvert.DeserializeObject<Dictionary<string, string>>(mmhCookies.ReadToEnd());
                     }
@@ -99,7 +106,7 @@ namespace Quill
                 }
                 catch
                 {
-                    //File.Delete(Path.Combine(Directory.GetCurrentDirectory(), "cookies.json"));
+                    //File.Delete(Path.Combine(System.Reflection.Assembly.GetExecutingAssembly().Location, "cookies.json"));
                 }
 
                 if (registeredCookies.ContainsKey(username1))
@@ -114,7 +121,7 @@ namespace Quill
 
             var tries = 0;
 
-            WebDriver driver = null;
+            WebDriver ?driver = null;
 
             while (tries < 5)
             {
@@ -140,13 +147,23 @@ namespace Quill
                 new NullReferenceException();
             try
             {
-                driver.Navigate().GoToUrl("https://twitter.com/i/flow/login");
+                driver.Navigate().GoToUrl("https://x.com/i/flow/login");
                 driver.Navigate().Refresh();
                 Actions actions = new Actions(driver);
+
+                
+
+                if (driver.Url == "https://x.com/" || driver.Url == "https://x.com")
+                {
+                    new WebDriverWait(driver, TimeSpan.FromDays(1)).Until(SeleniumExtras.WaitHelpers.ExpectedConditions.ElementExists(By.XPath("(//a[@href='/login'])[1]")));               
+                    var loginButton = driver.FindElement(By.XPath("(//a[@href='/login'])[1]"));
+                    loginButton.Click();
+                }
+
                 new WebDriverWait(driver, TimeSpan.FromDays(1)).Until(SeleniumExtras.WaitHelpers.ExpectedConditions.ElementExists(By.XPath("//input[@name='text']")));
                 new WebDriverWait(driver, TimeSpan.FromDays(1)).Until(SeleniumExtras.WaitHelpers.ExpectedConditions.ElementToBeClickable(By.XPath("//input[@name='text']")));
 
-                var usernameFill = driver.FindElement(By.XPath("//input[@name='text']"));
+                var usernameFill = driver.FindElement(By.XPath("(//input[@type='text'])[1]"));
                 usernameFill.Click();
                 usernameFill.SendKeys(username1);
                 //Thread.Sleep(1000);
@@ -180,26 +197,34 @@ namespace Quill
                 
                 new WebDriverWait(driver, TimeSpan.FromDays(1)).Until(SeleniumExtras.WaitHelpers.ExpectedConditions.ElementExists(By.XPath("//input[@name='password']")));
                 new WebDriverWait(driver, TimeSpan.FromDays(1)).Until(SeleniumExtras.WaitHelpers.ExpectedConditions.ElementToBeClickable(By.XPath("//input[@name='password']")));
-                var passwordFill = driver.FindElement(By.XPath("//input[@name='password']"));
+                var passwordFill = driver.FindElement(By.XPath("(//input[@type='password'])[1]"));
                 actions.MoveToElement(passwordFill).Click().Perform();
                 passwordFill.Click();
                 passwordFill.SendKeys(password);
 
-                new WebDriverWait(driver, TimeSpan.FromDays(1)).Until(SeleniumExtras.WaitHelpers.ExpectedConditions.ElementExists(By.CssSelector(".css-175oi2r.r-sdzlij.r-1phboty.r-rs99b7.r-lrvibr.r-19yznuf.r-64el8z.r-1dye5f7.r-1loqt21.r-o7ynqc.r-6416eg.r-1ny4l3l")));
-                new WebDriverWait(driver, TimeSpan.FromDays(1)).Until(SeleniumExtras.WaitHelpers.ExpectedConditions.ElementToBeClickable(By.CssSelector(".css-175oi2r.r-sdzlij.r-1phboty.r-rs99b7.r-lrvibr.r-19yznuf.r-64el8z.r-1dye5f7.r-1loqt21.r-o7ynqc.r-6416eg.r-1ny4l3l")));
+                new WebDriverWait(driver, TimeSpan.FromDays(1)).Until(SeleniumExtras.WaitHelpers.ExpectedConditions.ElementExists(By.XPath("(//button[@class='css-175oi2r r-sdzlij r-1phboty r-rs99b7 r-lrvibr r-19yznuf r-64el8z r-1fkl15p r-1loqt21 r-o7ynqc r-6416eg r-1ny4l3l'])[1]")));
+                new WebDriverWait(driver, TimeSpan.FromDays(1)).Until(SeleniumExtras.WaitHelpers.ExpectedConditions.ElementToBeClickable(By.XPath("(//button[@class='css-175oi2r r-sdzlij r-1phboty r-rs99b7 r-lrvibr r-19yznuf r-64el8z r-1fkl15p r-1loqt21 r-o7ynqc r-6416eg r-1ny4l3l'])[1]")));
 
-                var REALloginButon = driver.FindElement(By.CssSelector(".css-175oi2r.r-sdzlij.r-1phboty.r-rs99b7.r-lrvibr.r-19yznuf.r-64el8z.r-1dye5f7.r-1loqt21.r-o7ynqc.r-6416eg.r-1ny4l3l"));
+                var REALloginButon = driver.FindElement(By.XPath("(//button[@data-testid='LoginForm_Login_Button'])[1]"));
                 REALloginButon.Click();
 
                 //Thread.Sleep(3000);
                 new WebDriverWait(driver, TimeSpan.FromDays(1)).Until(SeleniumExtras.WaitHelpers.ExpectedConditions.ElementExists(By.XPath("(//h1[@role='heading'])[1]")));
                 new WebDriverWait(driver, TimeSpan.FromDays(1)).Until(SeleniumExtras.WaitHelpers.ExpectedConditions.ElementToBeClickable(By.XPath("(//h1[@role='heading'])[1]")));
 
-                cookies = System.Text.Json.JsonSerializer.Serialize(driver.Manage().Cookies.AllCookies, new JsonSerializerOptions { WriteIndented = true });
+
+                List<CustomCookie> cCs = new List<CustomCookie>();
+                cCs.Capacity = driver.Manage().Cookies.AllCookies.Count;
+                foreach (OpenQA.Selenium.Cookie cook in driver.Manage().Cookies.AllCookies)
+                {
+                    cCs.Add(new CustomCookie(cook));
+                }
+
+                cookies = System.Text.Json.JsonSerializer.Serialize(cCs, new JsonSerializerOptions { WriteIndented = true });
 
                 registeredCookies.Add(username1, cookies);
 
-                File.WriteAllText("cookies.json", JsonConvert.SerializeObject(registeredCookies, Formatting.Indented));
+                File.WriteAllText(Path.Combine(System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "cookies.json"), JsonConvert.SerializeObject(registeredCookies, Formatting.Indented));
             }
             catch (Exception e)
             {
@@ -244,17 +269,20 @@ namespace Quill
             }
         }
         /// <summary>
-        /// Used to safely close the client ton prevent memory leaks
+        /// Used to safely close the client to prevent memory leaks
         /// </summary>
         public void Close()
         {
             CloseAllPages();
         }
-
-        public static bool CheckForInternetConnection(int timeoutMs = 10000, string url = null)
-        {
-            
-
+        /// <summary>
+        /// returns true if there is a working internet connection. Returns false if there is no internet
+        /// </summary>
+        /// <param name="timeoutMs"></param>
+        /// <param name="url"></param>
+        /// <returns></returns>
+        public static bool CheckForInternetConnection(int timeoutMs = 10000, string? url = null)
+        {         
             try
             {
                 url ??= CultureInfo.InstalledUICulture switch

@@ -1,22 +1,10 @@
 ﻿using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
-using OpenQA.Selenium.DevTools.V111.Emulation;
-using OpenQA.Selenium.DevTools.V111.Security;
+using OpenQA.Selenium.DevTools.V129.Storage;
 using OpenQA.Selenium.Edge;
-using OpenQA.Selenium.Interactions;
 using OpenQA.Selenium.Support.UI;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
-using System.Linq;
-using System.Numerics;
-using System.Reflection.Metadata.Ecma335;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using System.Xml.Linq;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace Quill.Pages
 {
@@ -25,11 +13,11 @@ namespace Quill.Pages
     /// </summary>
     public class ComposePage : Page
     {
-        internal ComposePage(TwitterClient client) : base(client)
+        internal ComposePage(TwitterClient client) : base(client, "https://x.com/compose/post")
         {
             pageType = PageType.Compose;
-            baseUrl = "https://twitter.com/compose/post";
-            driver.Navigate().GoToUrl(baseUrl);
+            //baseUrl = "https://x.com/compose/post";
+            //driver.Navigate().GoToUrl(baseUrl);
             //Debug.WriteLine(driver.Url);
             if (driver.Url != baseUrl)
             {
@@ -74,14 +62,47 @@ namespace Quill.Pages
         /// Sends a tweet using the full tweet data
         /// </summary>
         /// <param name="tweetData">The information about the tweet. It is an array for thread support</param>
+        /// <param name="autoSleep">Automatically closes the webdriver once its finished creating the tweet</param>
         /// <returns></returns>
-        public async Task<int> Tweet(TweetData[] tweetData)
+        public async Task<int> Tweet(TweetData[] tweetData, bool autoSleep = false)
         {
+        start:
+
+            lock (driver)
+            {
+                if (sleeping || driver == null)
+                    AwakeDriver();
+
 
                 ReturnToBase();
                 //await Task.Delay(1000);
 
-                IWebElement addTweetBtn = new WebDriverWait(driver, TimeSpan.FromDays(1)).Until(SeleniumExtras.WaitHelpers.ExpectedConditions.ElementExists(By.XPath($"(//div[@aria-label='Post text'])[{1}]")));
+                IWebElement addTweetBtn = null;
+                try
+                {
+                    addTweetBtn = new WebDriverWait(driver, TimeSpan.FromMinutes(1)).Until(SeleniumExtras.WaitHelpers.ExpectedConditions.ElementExists(By.XPath($"(//div[@aria-label='Post text'])[{1}]")));
+                }
+                catch { }
+
+
+                int tries = 0;
+                while (tries < 10 || addTweetBtn != null)                   
+                {
+                    if (driver.FindElements(By.XPath($"(//div[@aria-label='Post text'])[{1}]")).Count <= 0)
+                    {
+                        SleepDriver();
+                        Thread.Sleep(2000);
+                        tries++;
+                    }
+                    else
+                        goto success;
+                }
+                goto start;
+                success:
+
+                if(addTweetBtn == null)
+                    addTweetBtn = new WebDriverWait(driver, TimeSpan.FromDays(1)).Until(SeleniumExtras.WaitHelpers.ExpectedConditions.ElementExists(By.XPath($"(//div[@aria-label='Post text'])[{1}]")));
+
                 //check if tweet is valid               
 
                 var cappedLength = Math.Clamp(tweetData.Length, 0, 22);
@@ -112,17 +133,29 @@ namespace Quill.Pages
                     textBox.Click();
 
                     if (driver.GetType() == typeof(ChromeDriver) || driver.GetType() == typeof(EdgeDriver) || driver.GetType() == typeof(ChromeDriver))
-                        textBox.SendKeys(Regex.Replace(data.content, @"\p{Cs}", " "));
+                        textBox.SendKeys(Regex.Replace(data.content != null ? data.content : string.Empty, @"\p{Cs}", " "));
                     else
-                        textBox.SendKeys(data.content);
+                        textBox.SendKeys(data.content != null ? data.content : string.Empty);
                     #endregion
 
                     #region Image Sending
 
+                    var mediaMode = MediaMode.Image;
+                    var firstFileType = string.Empty;
+
                     if (data.media != null)
                     {
-                        //putting in the media
-                        var imageBtn = driver.FindElement(By.XPath($"(//div[@aria-label='Add photos or video'])[{i + 1}]"));
+                        firstFileType = GetFileExtension(data.media[0].url);
+
+                        if (firstFileType == "mp4" || firstFileType == "m4a" || firstFileType == "m4b" || firstFileType == "mov" || firstFileType == "m4v")
+                            mediaMode = MediaMode.Video;
+                        else if (firstFileType == "gif")
+                            mediaMode = MediaMode.Gif;
+
+                        while (driver.FindElements(By.XPath($"(//button[@aria-label='Add photos or video'])[{i + 1}]")).Count == 0) ;
+                        //putting in the media                                                                                                                              (//button[@aria-label='Add photos or video'])[1]
+                        IWebElement imageBtn = new WebDriverWait(driver, TimeSpan.FromDays(1)).Until(SeleniumExtras.WaitHelpers.ExpectedConditions.ElementExists(By.XPath($"(//button[@aria-label='Add photos or video'])[{i + 1}]")));
+                        //var imageBtn = driver.FindElement(By.XPath($"(//div[@aria-label='Add photos or video'])[{i + 1}]"));
 
                         for (int j = 0; j < data.media.Length; j++)
                         {
@@ -139,28 +172,21 @@ namespace Quill.Pages
                                 imageInput.SendKeys(image.url);
                                 Thread.Sleep(300);
 
-                                if (driver.FindElements(By.XPath($"(//div[@role='presentation'])[{1 + j}]")).Count <= 0)
-                                {
-                                    Thread.Sleep(1000);
+                                // if (driver.FindElements(By.XPath($"(//div[@role='presentation'])[{2 + j}]")).Count <= 0)
+                                ///{
+                                Thread.Sleep(1000);
 
-                                    if (driver.FindElements(By.XPath($"(//div[@role='presentation'])[{1 + j}]")).Count >= 0)
-                                    {
-                                        loops++;
-                                        break;
-                                    }
+                                if (driver.FindElements(By.XPath($"(//div[@role='presentation'])[{2 + j}]")).Count >= 0 || (mediaMode == MediaMode.Video && driver.FindElements(By.XPath($"(//div[@role='status'])[1]")).Count >= 0))
+                                {
+                                    loops++;
+                                    break;
                                 }
+                                // }
                             }
                         }
-
                         //applying the image attributes
 
-                        var mediaMode = MediaMode.Image;
-                        var firstFileType = GetFileExtension(data.media[0].url);
 
-                        if (firstFileType == "mp4" || firstFileType == "m4a" || firstFileType == "m4b" || firstFileType == "mov" || firstFileType == "m4v")
-                            mediaMode = MediaMode.Video;
-                        else if (firstFileType == "gif")
-                            mediaMode = MediaMode.Gif;
 
 
                         for (int j = 0; j < data.media.Length; j++)
@@ -258,7 +284,6 @@ namespace Quill.Pages
 
                                 var altTextBox = new WebDriverWait(driver, TimeSpan.FromDays(1)).Until(SeleniumExtras.WaitHelpers.ExpectedConditions.ElementExists(By.CssSelector($"textarea[name='altTextInput']")));
                                 altTextBox.SendKeys(media.altText);
-
                             }
 
                             #endregion
@@ -313,7 +338,7 @@ namespace Quill.Pages
                     return 2;
                 }
 
-                var sendBtn = new WebDriverWait(driver, TimeSpan.FromDays(1)).Until(SeleniumExtras.WaitHelpers.ExpectedConditions.ElementExists(By.XPath($"(//div[@data-testid='tweetButton'])[1]")));
+                var sendBtn = new WebDriverWait(driver, TimeSpan.FromDays(1)).Until(SeleniumExtras.WaitHelpers.ExpectedConditions.ElementExists(By.XPath($"(//button[@data-testid='tweetButton'])[1]")));
                 string outs = sendBtn.GetDomAttribute("aria-disabled");
                 while (sendBtn.GetDomAttribute("aria-disabled") == "true")
                 {
@@ -324,8 +349,23 @@ namespace Quill.Pages
                     return 3;
 
                 sendBtn.Click();
+
+                if (autoSleep)
+                {
+                    try
+                    {
+                        new WebDriverWait(driver, TimeSpan.FromMinutes(1)).Until(SeleniumExtras.WaitHelpers.ExpectedConditions.UrlContains("/home"));
+                        SleepDriver();
+                    }
+                    catch
+                    {
+                        SleepDriver();
+                        return 4;
+                    }                                       
+                }
+
                 return 0;
-            
+            }
         }
 
         public static string GetFileExtension(string path)

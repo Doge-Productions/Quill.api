@@ -1,10 +1,10 @@
 import fs from 'fs';
-import path, { resolve } from 'path';
+import path from 'path';
 import { List } from './tools';
-import { PageType, Page } from './Pages';
-import { rejects } from 'assert';
-import { Actions, WebDriver, until, Builder, By } from 'selenium-webdriver';
+import { Page } from './Pages';
+import { WebDriver, until, By, Actions, Builder } from 'selenium-webdriver';
 import DriverCreation from './DriverCreation';
+import ComposePage from './Pages/ComposePage';
 
 
 export default class TwitterClient implements ITwitterClient
@@ -22,9 +22,6 @@ export default class TwitterClient implements ITwitterClient
     public cookies: string;
     public pages: List<Page>;
     
-
-    constructor(); // << SIG
-    constructor(username: string, username2: string, password: string, cookies: string); // << SIG
     /*  
     * Wont't actually log you into the client, Just here to save the login information.
     * @param username This will be used first to sign in. This is preferably a username (handle, @) but could also be an email or phone number
@@ -32,12 +29,15 @@ export default class TwitterClient implements ITwitterClient
     * @param password The password of the account you want to use.
     * @param cookies The cookies used to login with
     */
+    constructor(); // << SIG
+    constructor(username: string, username2: string, password: string, cookies: string); // << SIG
     constructor(username?: string, username2?: string, password?: string, cookies?: string) { // << IMPL
         this.username = username || '';
         this.username2 = username2 || '';
         this.password = password || '';
         this.cookies = cookies || '';
         this.pages = new List<Page>();
+                console.log('TwitterClient created');
     }
 
 
@@ -52,24 +52,23 @@ export default class TwitterClient implements ITwitterClient
     public async Login(username1?: string, username2?: string, accountPassword?: string): Promise<void> { // << IMPL
         if (!username1 && !username2 && !accountPassword) {
             await this.Login(this.username, this.username2, this.password);
-            resolve(); // yippe we're done or atleast we waited for the login to be done
+                    console.log('Logged in');
         }
 
         this.username = username1 || '';
-        this.password = accountPassword || '';
         var registeredCookies = new Map<string, string>();
         if (fs.existsSync(path.join(__dirname, 'cookies.json'))) 
         {
             try {
                 registeredCookies = JSON.parse(fs.readFileSync(path.join(__dirname, 'cookies.json'), 'utf8'));
             } catch (err: string | any) {
-                rejects(err); // something went wrong
+                return err;
             }
 
             if (registeredCookies.has(username1 || this.username)) {
                 this.cookies = registeredCookies.get(username1 || this.username) || '';
                 if (this.cookies != null)
-                    resolve(); // yippe we're done
+                    return;
                 else
                     registeredCookies.delete(username1 || this.username);      
             }
@@ -105,9 +104,8 @@ export default class TwitterClient implements ITwitterClient
         {
             driver?.navigate().to('https://x.com/i/flow/login');
             driver?.navigate().refresh();
-            var actions:Actions = new Actions(driver!);
+            driver?.navigate().refresh();
             await driver?.wait(until.elementLocated(By.xpath("//input[@name='text']")), 10000);
-            await driver?.wait(until.elementIsEnabled(driver?.findElement(By.xpath("//input[@name='text']"))), 10000);
 
             var usernameFill = driver?.findElement(By.xpath("//input[@name='text']"));
             await usernameFill.click();
@@ -133,10 +131,9 @@ export default class TwitterClient implements ITwitterClient
             await driver?.wait(until.elementLocated(By.xpath("//input[@name='password']")), 10000);
             await driver?.wait(until.elementIsEnabled(driver?.findElement(By.xpath("//input[@name='password']"))), 10000);
             var passwordFill = driver?.findElement(By.xpath("//input[@name='password']"));
-            await actions.move({origin: passwordFill});
+            // await actions.move({origin: passwordFill});
+            var passwordFill = driver?.findElement(By.xpath("//input[@name='password']"));
             await passwordFill.click();
-            await passwordFill.sendKeys(accountPassword || this.password);
-
             await driver?.wait(until.elementLocated(By.css(".css-175oi2r.r-sdzlij.r-1phboty.r-rs99b7.r-lrvibr.r-19yznuf.r-64el8z.r-1dye5f7.r-1loqt21.r-o7ynqc.r-6416eg.r-1ny4l3l")), 10000);
             var RealLoginButton = driver?.findElement(By.css(".css-175oi2r.r-sdzlij.r-1phboty.r-rs99b7.r-lrvibr.r-19yznuf.r-64el8z.r-1dye5f7.r-1loqt21.r-o7ynqc.r-6416eg.r-1ny4l3l"));
             await RealLoginButton.click();
@@ -144,26 +141,60 @@ export default class TwitterClient implements ITwitterClient
             this.cookies = JSON.parse(await driver?.manage().getCookies().toString());
 
             registeredCookies.set(username1 || this.username, this.cookies);
-            fs.writeFileSync(path.join(__dirname, 'cookies.json'), JSON.stringify(registeredCookies, null, 2));
+            const cookies = await driver?.manage().getCookies();
+            this.cookies = JSON.stringify(cookies);
         }
         catch (err: string | any)
         {
-            rejects(err);
+            console.log(err);
+            return err;
         }
         finally
         {
             if (driver != null)
                 driver.quit();
             else
-                resolve('Driver is null');
+                console.log('Driver awsome null');
+            return;
         }
     }
     
 
-    public CreateCompose() :ConposePage
+    public CreateCompose(): ComposePage
     {
         if (this.pages == null)
-            this.pages = new();
+            this.pages = new List<Page>();
+        var page = new ComposePage(this);
+        this.pages.add(page);
+        return page;
+    }
+
+    public CloseAllages(): void
+    {
+        this.pages.forEach(apge => {
+            apge.close();
+        });
+    }
+
+    public static async CheckForInternetConnection(): Promise<boolean>
+    {
+        
+        try {
+            const url = Intl.DateTimeFormat().resolvedOptions().locale.startsWith('fa') 
+                ? 'http://www.aparat.com'
+                : Intl.DateTimeFormat().resolvedOptions().locale.startsWith('zh')
+                    ? 'http://www.baidu.com'
+                    : 'http://www.gstatic.com/generate_204';
+
+            const response = await fetch(url, { 
+                keepalive: false, 
+                signal: AbortSignal.timeout(5000) 
+            });
+            return true;
+        } catch {
+            return false;
+        }
+
     }
 
 }

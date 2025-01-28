@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "build": "tsup",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "tsup && mocha"
   },
   "keywords": [
     "X",
@@ -26,6 +26,7 @@
     "@types/node": "^22.10.10",
     "@types/selenium-webdriver": "^4.1.28",
     "ts-node": "^10.9.2",
+    "typedoc": "^0.27.6",
     "typescript": "^5.7.3"
   },
   "dependencies": {

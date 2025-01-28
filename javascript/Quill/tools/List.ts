@@ -27,6 +27,10 @@ export class List<T>
         return this.items[index];
     }
 
+    forEach(callbackFn: (value: T, index: number, array: T[]) => void): void {
+        this.items.forEach(callbackFn);
+    }
+    
     contains(value: T): boolean
     {
         return this.items.includes(value);

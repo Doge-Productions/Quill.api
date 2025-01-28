@@ -97,7 +97,7 @@ export abstract class Page
      * @remarks this will allow the page to be reopened without having to relogin
      * @remarks Is Asyncronous
      */
-    public async sleep(): Promise<void>
+    public async sleepDriver(): Promise<void>
     {
         this.sleeping = true;
     }
@@ -123,7 +123,7 @@ export abstract class Page
     
 }
     
-class CustomCookie
+export class CustomCookie
 {
     public name!: string;
     public value!: string;

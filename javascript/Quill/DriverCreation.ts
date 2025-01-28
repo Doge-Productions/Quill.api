@@ -4,9 +4,9 @@ import ie from 'selenium-webdriver/ie';
 import { Builder, WebDriver } from 'selenium-webdriver';
 import { List } from './tools';
 
-enum BrowserType 
+export enum BrowserType 
 {
-    /** **Default** Chrome curently Dose Not Support Emojis
+    /** Chrome curently Dose Not Support Emojis
      */
     Chrome,
     /** **Not Recommended.** Requires your operating system to be in English. Driver options may not function properly
@@ -16,6 +16,8 @@ enum BrowserType
     /** **Not Recomended** All flages will be ignored
      */
     Safari,
+    /** **Default** Recommended for most cases. Supports emojis and evrything
+     */
     Firefox,
 }
 
@@ -43,14 +45,14 @@ export class DriverOptions {
 
     constructor() 
     {
-        this.headless = true;
+        this.headless = false;
         this.loadImages = true;
         this.disableCSS = false;
     }
 }
 
 export default class DriverCreation {
-    public static type: BrowserType = BrowserType.Chrome;
+    public static type: BrowserType = BrowserType.Firefox;
 
     public static options: DriverOptions = new DriverOptions();
 
@@ -106,93 +108,112 @@ export default class DriverCreation {
                         .setChromeOptions(cOptions)
                         .build();
                 }
-        case BrowserType.Firefox:
-            {
-                var fOptions = new firefox.Options();
-                var fDriverService: firefox.ServiceBuilder;
-
-                if (!this.executablePath)
-                    fDriverService = new firefox.ServiceBuilder();
-                else
-                    fDriverService = new firefox.ServiceBuilder(this.executablePath);
-
-                if (this.options.headless)
-                    fOptions.addArguments("--headless");
-                if (!this.options.loadImages)
-                    fOptions.addArguments("--disable-images");
-
-                for (const flag of this.flags) {
-                    fOptions.addArguments(flag);
-                }
-
-                return new Builder()
-                    .forBrowser('firefox')
-                    .setFirefoxService(fDriverService)
-                    .setFirefoxOptions(fOptions)
-                    .build();
-            }
-        case BrowserType.Edge:
-            {
-                var eOptions = new chrome.Options();
-                var eDriverService: chrome.ServiceBuilder;
-
-                if (!this.executablePath)
-                    eDriverService = new chrome.ServiceBuilder();
-                else
-                    eDriverService = new chrome.ServiceBuilder(this.executablePath);
-
-                if (this.options.headless)
-                    eOptions.addArguments("--headless=new");
-                if (!this.options.loadImages)
-                    eOptions.addArguments("--blink-settings=imagesEnabled=false");
-
-                for (const flag of this.flags) {
-                    eOptions.addArguments(flag);
-                }
-
-                return new Builder()
-                    .forBrowser('MicrosoftEdge')
-                    .setChromeService(eDriverService)
-                    .setChromeOptions(eOptions)
-                    .build();
-            }
-        case BrowserType.InternetExplorer:
-            {
-                var ieOptions = new ie.Options();
-                var ieDriverService: ie.ServiceBuilder;
-
-
-                if (!this.executablePath)
-                    ieDriverService = new ie.ServiceBuilder();
-                else
-                    ieDriverService = new ie.ServiceBuilder(this.executablePath);
-
-                if (this.options.headless)
+            case BrowserType.Firefox:
                 {
-                    ieOptions.introduceFlakinessByIgnoringProtectedModeSettings(true);
-                    ieOptions.ensureCleanSession(true);
-                    ieOptions.addArguments("--private");
-                    ieOptions.introduceFlakinessByIgnoringProtectedModeSettings(true);
-                }
+                    var fOptions = new firefox.Options();
+                    var fDriverService: firefox.ServiceBuilder;
 
-                for (const flag of this.flags) {
-                    ieOptions.addArguments(flag);
-                }
+                    if (!this.executablePath)
+                        fDriverService = new firefox.ServiceBuilder();
+                    else
+                        fDriverService = new firefox.ServiceBuilder(this.executablePath);
 
-                return new Builder()
-                    .forBrowser('ie')
-                    .setIeService(ieDriverService)
-                    .setIeOptions(ieOptions)
-                    .build();
-            }
-        case BrowserType.Safari:
-            throw new Error(`Browser type ${BrowserType[type]} is not supported`);
-        default:
-            return this.CreateNew(BrowserType.Chrome);
+                    if (this.options.headless)
+                        fOptions.addArguments("--headless");
+                    if (!this.options.loadImages)
+                        fOptions.addArguments("--disable-images");
+
+                    for (const flag of this.flags) {
+                        fOptions.addArguments(flag);
+                    }
+
+                    return new Builder()
+                        .forBrowser('firefox')
+                        .setFirefoxService(fDriverService)
+                        .setFirefoxOptions(fOptions)
+                        .build();
+                }
+            case BrowserType.Edge:
+                {
+                    var eOptions = new chrome.Options();
+                    var eDriverService: chrome.ServiceBuilder;
+
+                    if (!this.executablePath)
+                        eDriverService = new chrome.ServiceBuilder();
+                    else
+                        eDriverService = new chrome.ServiceBuilder(this.executablePath);
+
+                    if (this.options.headless)
+                        eOptions.addArguments("--headless=new");
+                    if (!this.options.loadImages)
+                        eOptions.addArguments("--blink-settings=imagesEnabled=false");
+
+                    for (const flag of this.flags) {
+                        eOptions.addArguments(flag);
+                    }
+
+                    return new Builder()
+                        .forBrowser('MicrosoftEdge')
+                        .setChromeService(eDriverService)
+                        .setChromeOptions(eOptions)
+                        .build();
+                }
+            case BrowserType.InternetExplorer:
+                {
+                    var ieOptions = new ie.Options();
+                    var ieDriverService: ie.ServiceBuilder;
+
+
+                    if (!this.executablePath)
+                        ieDriverService = new ie.ServiceBuilder();
+                    else
+                        ieDriverService = new ie.ServiceBuilder(this.executablePath);
+
+                    if (this.options.headless)
+                    {
+                        ieOptions.introduceFlakinessByIgnoringProtectedModeSettings(true);
+                        ieOptions.ensureCleanSession(true);
+                        ieOptions.addArguments("--private");
+                        ieOptions.introduceFlakinessByIgnoringProtectedModeSettings(true);
+                    }
+
+                    for (const flag of this.flags) {
+                        ieOptions.addArguments(flag);
+                    }
+
+                    return new Builder()
+                        .forBrowser('ie')
+                        .setIeService(ieDriverService)
+                        .setIeOptions(ieOptions)
+                        .build();
+                }
+            case BrowserType.Safari:
+                throw new Error(`Browser type ${BrowserType[type]} is not supported`);
+            default:
+                return this.CreateNew(BrowserType.Firefox);
 
         }
-
     }
+
+    public static async GetType(): Promise<string> 
+    {
+        switch (this.type)
+        {
+            case BrowserType.Chrome:
+                return "chrome";
+            case BrowserType.Firefox:
+                return "firefox";
+            case BrowserType.InternetExplorer:
+                return "ie";
+            case BrowserType.Edge:
+                return "edge";
+            case BrowserType.Safari:
+                return "safari";
+            default:
+                return "none";
+        }
+    }
+
 }
 
 

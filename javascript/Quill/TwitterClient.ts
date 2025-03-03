@@ -1,7 +1,7 @@
 import fs from 'fs';
-import path from 'path';
-import { List } from './tools';
-import { Page } from './Pages';
+import path, { resolve } from 'path';
+import { List, Logger, LogLevel, Stream } from './Tools';
+import { CustomCookie, Page } from './Pages';
 import { WebDriver, until, By, Actions, Builder } from 'selenium-webdriver';
 import DriverCreation from './DriverCreation';
 import ComposePage from './Pages/ComposePage';
@@ -20,8 +20,11 @@ export default class TwitterClient implements ITwitterClient
     /* The cookies used to login with
     */
     public cookies: string;
+    public cookieStream?: Stream<String>;
     public pages: List<Page>;
     
+    /** The Logger Class Used */
+    public logger: Logger;
     /*  
     * Wont't actually log you into the client, Just here to save the login information.
     * @param username This will be used first to sign in. This is preferably a username (handle, @) but could also be an email or phone number
@@ -30,18 +33,19 @@ export default class TwitterClient implements ITwitterClient
     * @param cookies The cookies used to login with
     */
     constructor(); // << SIG
-    constructor(username: string, username2: string, password: string, cookies: string); // << SIG
-    constructor(username?: string, username2?: string, password?: string, cookies?: string) { // << IMPL
+    constructor(username: string, username2: string, password: string, cookies: string); // << Implamintation Signature
+    constructor(username: string, username2: string, password: string, cookies?: string, cookieStream?: Stream<String>); // << Implimentatin Signature
+    constructor(username?: string, username2?: string, password?: string, cookies?: string, cookieStream?: Stream<String> ) { // << IMPL
+        this.cookieStream = cookieStream;
         this.username = username || '';
         this.username2 = username2 || '';
         this.password = password || '';
         this.cookies = cookies || '';
         this.pages = new List<Page>();
-                console.log('TwitterClient created');
+        this.logger = new Logger();
     }
 
 
-    
     /** ------ Logs you into the client. ------
      * @param username1 This will be used first to sign in. This is preferably a username (handle, \@) but could also be an email or phone number
      * @param username2 This will be used if prompted with the suspicious activity screen. **THIS HAS TO BE DIFFERENT THAN THE FIRST!!** This could be an email, phone number, or username (handle, \@)
@@ -50,118 +54,154 @@ export default class TwitterClient implements ITwitterClient
     public async Login(): Promise<void>; // << SIG
     public async Login(username1: string, username2: string, accountPassword: string): Promise<void>; // << SIG
     public async Login(username1?: string, username2?: string, accountPassword?: string): Promise<void> { // << IMPL
-        if (!username1 && !username2 && !accountPassword) {
-            await this.Login(this.username, this.username2, this.password);
-                    console.log('Logged in');
-        }
-
-        this.username = username1 || '';
-        var registeredCookies = new Map<string, string>();
-        if (fs.existsSync(path.join(__dirname, 'cookies.json'))) 
-        {
-            try {
-                registeredCookies = JSON.parse(fs.readFileSync(path.join(__dirname, 'cookies.json'), 'utf8'));
-            } catch (err: string | any) {
-                return err;
-            }
-
-            if (registeredCookies.has(username1 || this.username)) {
-                this.cookies = registeredCookies.get(username1 || this.username) || '';
-                if (this.cookies != null)
-                    return;
-                else
-                    registeredCookies.delete(username1 || this.username);      
+        var username: string = username1!;
+        var password: string = accountPassword!;
+        if (!this.cookieStream)
+            var registeredCookies: string = this.cookies;
+        if (this.cookieStream)
+            var SavedCookies = this.cookieStream;
+        
+        // check for cookies file
+        if (fs.existsSync(path.join(__dirname, 'cookies.json'))) {
+            var cookies = await fs.readFileSync(path.join(__dirname, 'cookies.json'), 'utf8');
+            cookies = await JSON.parse(cookies);
+            if ( cookies.includes(username) )
+            {
+                registeredCookies = cookies;
             }
         }
 
-        // if we don't have cookies or they are invalid
-        var driver: WebDriver | undefined;
-
-        var tries = 0;
-
+        // open browser
+        this.logger.Log('Opening Browser', LogLevel.Info);
+        var tries: number = 0;
         while (tries < 5)
         {
-            try
+           try
+           {
+            var driver = DriverCreation.CreateNew();
+            tries = 5;
+           }
+           catch
+           {
+            tries++;
+           }
+           finally
+           {
+            if (driver! != null)
             {
-                driver = DriverCreation.CreateNew();
                 tries = 5;
             }
-            catch
-            {
-                tries++;
-            }
-            finally
-            {
-                if (driver != null)
-                    tries = 5;
-            }
-
+           }
+            
         }
 
-        if (driver == null)
+        if (driver! == null)
             return;
-        try
+        try 
         {
-            driver?.navigate().to('https://x.com/i/flow/login');
-            driver?.navigate().refresh();
-            driver?.navigate().refresh();
-            await driver?.wait(until.elementLocated(By.xpath("//input[@name='text']")), 10000);
+            await driver?.navigate().to('https://twitter.com/i/flow/login');
+            await driver?.navigate().refresh();
+            // var actions: Actions = new Actions(driver);
 
-            var usernameFill = driver?.findElement(By.xpath("//input[@name='text']"));
+
+            // -----
+            if (await driver?.getCurrentUrl() == "https://x.com/" || await driver?.getCurrentUrl() == "https://x.com/")
+            {
+                await driver?.wait(until.elementLocated(By.xpath("(//a[@href='/login'])[1]")), 10000);
+                var loginBtn = await driver?.findElement(By.xpath("(//a[@href='/login'])[1]"));
+                loginBtn.click();
+            }
+
+            await driver?.wait(until.elementLocated(By.xpath("//input[@name='text']")), 10000);
+            await driver?.wait(until.elementIsEnabled(await driver?.findElement(By.xpath("//input[@name='text']"))), 10000);
+            var usernameFill = await driver?.findElement(By.xpath("(//input[@type='text'])[1]"));
             await usernameFill.click();
-            await usernameFill.sendKeys(username1 || this.username);
-            
-            var nextBtn = driver?.findElement(By.xpath("//span[contains(text(), 'Next)]"));
+            await usernameFill.sendKeys(username);
+
+            await driver?.wait(until.elementLocated(By.xpath("//span[contains(text(),'Next')]")), 10000);
+            await driver?.wait(until.elementIsEnabled(await driver?.findElement(By.xpath("//span[contains(text(),'Next')]"))), 10000);
+            var nextBtn = await driver?.findElement(By.xpath("//span[contains(text(),'Next')]"));
             nextBtn.click();
 
-                // \/ Wait untill the password field is visible
-            await driver?.wait(until.elementLocated(By.xpath("//input(@name='password']")) || until.elementLocated(By.xpath("//div[@class='css-1dbjc4n r-knv0ih']//span[@class='css-901oao css-16my406 r-poiln3 r-bcqeeo r-qvutc0']//span[1]")), 10000);
-
-            if (driver?.findElement(By.xpath("//div[@class='css-1dbjc4n r-knv0ih']//span[@class='css-901oao css-16my406 r-poiln3 r-bcqeeo r-qvutc0']//span[1]")) != null)
+            while ((await driver?.findElements(By.xpath("//div[@class='css-1dbjc4n r-knv0ih']//span[@class='css-901oao css-16my406 r-poiln3 r-bcqeeo r-qvutc0']//span[1]"))).length < 0 || (await driver?.findElements(By.xpath("//input[@name='password']"))).length < 0)
             {
-                // \/ If we are prompted with the suspicious activity screen
-                var altInput = driver?.findElement(By.xpath("//input[@name='text']"));
-                await altInput.click();
-                await altInput.sendKeys(username2 || this.username2);
-                
-                var nextBtn2 = driver?.findElement(By.xpath("//span[contains(text(),'Next')]"));
-                nextBtn2.click();
+                await driver?.sleep(50);
+            }
+                // check for suspicious activity screen \/\/\/
+            if ((await driver?.findElements(By.xpath("//div[@class='css-1dbjc4n r-knv0ih']//span[@class='css-901oao css-16my406 r-poiln3 r-bcqeeo r-qvutc0']//span[1]"))).length < 0)
+            {
+                var altInput = await driver?.findElements(By.xpath("//input[@name='text']"));
+                await altInput[0].click();
+                await altInput[0].sendKeys(username2!);
+
+                var nextBtn2 = await driver?.wait(until.elementLocated(By.xpath("//span[contains(text(),'Next')]")), 10000);
+                await nextBtn2.click();
             }
 
             await driver?.wait(until.elementLocated(By.xpath("//input[@name='password']")), 10000);
-            await driver?.wait(until.elementIsEnabled(driver?.findElement(By.xpath("//input[@name='password']"))), 10000);
-            var passwordFill = driver?.findElement(By.xpath("//input[@name='password']"));
-            // await actions.move({origin: passwordFill});
-            var passwordFill = driver?.findElement(By.xpath("//input[@name='password']"));
-            await passwordFill.click();
-            await driver?.wait(until.elementLocated(By.css(".css-175oi2r.r-sdzlij.r-1phboty.r-rs99b7.r-lrvibr.r-19yznuf.r-64el8z.r-1dye5f7.r-1loqt21.r-o7ynqc.r-6416eg.r-1ny4l3l")), 10000);
-            var RealLoginButton = driver?.findElement(By.css(".css-175oi2r.r-sdzlij.r-1phboty.r-rs99b7.r-lrvibr.r-19yznuf.r-64el8z.r-1dye5f7.r-1loqt21.r-o7ynqc.r-6416eg.r-1ny4l3l"));
-            await RealLoginButton.click();
+            await driver?.wait(until.elementIsEnabled(await (driver?.findElement(By.xpath("//input[@name='password']")))), 10000);
+            var passwordFill = await driver?.findElement(By.xpath("(//input[@type='password'])[1]"));
+            // actions.move({origin: passwordFill}).click().perform();
+            passwordFill.click();
+            passwordFill.sendKeys(password);
 
-            this.cookies = JSON.parse(await driver?.manage().getCookies().toString());
+            var RealLoginBtn = await driver?.findElement(By.xpath("(//button[@data-testid='LoginForm_Login_Button'])[1]"));
+            RealLoginBtn.click();
 
-            registeredCookies.set(username1 || this.username, this.cookies);
-            const cookies = await driver?.manage().getCookies();
-            this.cookies = JSON.stringify(cookies);
+            if (await driver?.getCurrentUrl() == "https://x.com/home" || await driver?.getCurrentUrl() == "https://x.com/home/")
+            {
+                await driver?.wait(until.elementLocated(By.xpath("(//h1[@role='heading'])[1]")), 10000);
+                await driver?.wait(until.elementIsEnabled(await driver?.findElement(By.xpath("(//h1[@role='heading'])[1]"))), 10000);
+            }
+         
+
+            // cookies saving
+            if (!this.cookieStream && this.cookies)
+            {
+                var cCs = new List<CustomCookie>();
+                driver?.manage().getCookies().then(async cookies => {
+                    cookies.forEach(async cookie => {
+                        var cC = new CustomCookie(cookie);
+                        cCs.add(cC);
+                    });
+                    var jsonCookies = JSON.stringify(cCs);
+                    fs.writeFileSync('./cookies.json', jsonCookies);
+                });
+            }
+            else
+            {
+                var cCs = new List<CustomCookie>();
+                driver?.manage().getCookies().then(async cookies => {
+                    cookies.forEach(async cookie => {
+                        var cC = new CustomCookie(cookie);
+                        cCs.add(cC);
+                    });
+                    var jsonCookies = JSON.stringify(cCs);
+                    this.cookieStream?.push(jsonCookies); 
+                });
+            }
+
         }
-        catch (err: string | any)
+        catch (err)
         {
-            console.log(err);
-            return err;
+            const stringifiedError = err instanceof Error ? err.message : String(err);
+            this.logger.Log(stringifiedError, LogLevel.Fatal);
         }
         finally
         {
             if (driver != null)
-                driver.quit();
+                driver?.quit();
             else
-                console.log('Driver awsome null');
-            return;
+                this.logger.Log('Driver is null', LogLevel.Fatal);
+                return;
         }
+
     }
     
 
     public CreateCompose(): ComposePage
     {
+        this.logger.Log('Creating Compose Page', LogLevel.Info);
         if (this.pages == null)
             this.pages = new List<Page>();
         var page = new ComposePage(this);
@@ -195,6 +235,27 @@ export default class TwitterClient implements ITwitterClient
             return false;
         }
 
+    }
+
+    public async AttatchLogger(logger: Logger): Promise<Logger>
+    {
+        this.logger = logger;
+        await this.logger.Log('Logger Attached', LogLevel.Info);
+
+        this.logger.on('Debug', (message: string) => {
+            console.log(message);
+        });
+        this.logger.on('Info', (message: string) => {
+            console.log(message);
+        });
+        this.logger.on('NonFatal', (message: string) => {
+            console.log(message);
+        });
+        this.logger.on('Fatal', (message: string) => {
+            console.log(message);
+        });
+        return this.logger;
+        
     }
 
 }

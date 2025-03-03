@@ -2,7 +2,7 @@ import TwitterClient from "../TwitterClient";
 import DriverCreation from "../DriverCreation";
 import { WebDriver, IWebDriverOptionsCookie } from "selenium-webdriver";
 import { PageType } from "../Pages";
-import { List } from "../tools";
+import { List } from "../Tools";
 
 /**
  * The base class for all pages

@@ -7,7 +7,7 @@ import DriverCreation from './DriverCreation';
 import { DriverOptions, BrowserType} from './DriverCreation';
 
 import * as pages from './Pages';
-import * as Tools from './Tools';
+import * as Tools from './tools';
 // thanks
 export {
     TwitterClient,

@@ -2,7 +2,7 @@ import chrome from 'selenium-webdriver/chrome';
 import firefox from 'selenium-webdriver/firefox';
 import ie from 'selenium-webdriver/ie';
 import { Builder, WebDriver } from 'selenium-webdriver';
-import { List } from './Tools';
+import { List } from './tools';
 
 export enum BrowserType 
 {

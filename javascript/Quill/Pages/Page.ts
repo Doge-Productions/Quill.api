@@ -2,7 +2,9 @@ import TwitterClient from "../TwitterClient";
 import DriverCreation from "../DriverCreation";
 import { WebDriver, IWebDriverOptionsCookie } from "selenium-webdriver";
 import { PageType } from "../Pages";
-import { List } from "../Tools";
+import { List } from "../tools";
+import fs from 'fs';
+import { Duplex } from 'stream';
 
 /**
  * The base class for all pages
@@ -11,7 +13,7 @@ export abstract class Page
 {
     /** The cookies used to login
     */
-    public cookies?: string;
+    public cookies?: string | fs.WriteStream | Duplex;
     /** The driver used to interact with the page
     */
     public driver?: WebDriver;
@@ -43,8 +45,22 @@ export abstract class Page
     protected async init(): Promise<void> {
         this.driver?.navigate().to("https://x.com");
 
-        var savedCookie: List<CustomCookie> = JSON.parse(this.cookies!);
+        let savedCookie: List<CustomCookie>;
+        if (this.cookies instanceof Duplex) {
+            const chunks: Buffer[] = [];
+            this.cookies.on('data', chunk => chunks.push(chunk));
+            this.cookies.on('end', () => {
+                const data = Buffer.concat(chunks).toString();
+                savedCookie = JSON.parse(data);
+                this.addCookiesToDriver(savedCookie);
+            });
+        } else {
+            savedCookie = JSON.parse(this.cookies as string);
+            this.addCookiesToDriver(savedCookie);
+        }
+    }
 
+    private async addCookiesToDriver(savedCookie: List<CustomCookie>): Promise<void> {
         for (let cookie of savedCookie)
         {
             var customCookie = new CustomCookie(cookie);
@@ -54,7 +70,6 @@ export abstract class Page
 
         this.driver?.navigate().to("https://x.com");
         await this.driver?.wait(async () => (await this.driver?.getCurrentUrl()) === "https://x.com", 10000);
-
     }
 
     /** this will reload the page

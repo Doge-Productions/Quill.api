@@ -1,6 +1,6 @@
 import { List } from './List';
 import { Logger, LogLevel } from './Logger/Logger';
-import { Stream } from './streams';
+import { Stream } from '../Tools/streams';
 
 export
 {

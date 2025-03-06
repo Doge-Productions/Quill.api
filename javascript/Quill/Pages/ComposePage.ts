@@ -258,8 +258,6 @@ export default class ComposePage extends Page
         {
             throw new Error("Invalid Arguments");
         }
-
-
         
     }
 
@@ -356,11 +354,11 @@ export type ImageTag = {
 /** the content warning types */
 export enum ContentWarning {
     /** Content warning for nudity */
-    Nudity = 1 << 1,
+    Nudity = 1 << 0,
     /** Content warning for violence */
-    Violence = 1 << 2,
+    Violence = 1 << 1,
     /** Content warning for sensitive content */
-    Sensitive = 1 << 0, 
+    Sensitive = 1 << 2, 
 
 }
 
@@ -376,3 +374,11 @@ export enum CropOption
     /** Aspect ratio cropped into 1:1 */
     Square
 }
+
+export enum replyPerms
+{
+    Everyone,
+    accountsYouFollow,
+    verifiedAccounts,
+    onlyAccountsYouMention
+} 

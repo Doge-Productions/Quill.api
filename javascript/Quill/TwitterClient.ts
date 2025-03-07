@@ -20,6 +20,7 @@ export default class TwitterClient implements ITwitterClient
     /* The cookies used to login with
     */
     public cookies: string | fs.WriteStream | Duplex;
+    private cookieIsDuplex: boolean = false;
     public pages: List<Page>;
     
     /** The Logger Class Used */
@@ -57,7 +58,7 @@ export default class TwitterClient implements ITwitterClient
         var password: string = accountPassword!;
         let registeredCookies: string | undefined;
 
-        if (this.cookies instanceof fs.WriteStream || this.cookies instanceof Duplex) {
+        if (typeof(this.cookies) == 'string' || this.cookies instanceof fs.WriteStream && this.cookies !instanceof Duplex) {
             const cookieFilePath = path.join(__dirname, 'cookies.json');
             if (fs.existsSync(cookieFilePath)) {
                 const cookies = await fs.readFileSync(cookieFilePath, 'utf8');
@@ -66,8 +67,15 @@ export default class TwitterClient implements ITwitterClient
                     registeredCookies = cookies;
                 }
             }
-        } else if (typeof this.cookies === 'string') {
-            registeredCookies = this.cookies;
+        } else if (this.cookies instanceof Duplex) {
+            this.cookieIsDuplex = true;
+            this.logger.Log('Cookies is a Duplex Stream', LogLevel.Info);
+            this.cookies.on('data', (chunk: Buffer) => {
+                const cookies = JSON.parse(chunk.toString());
+                if (cookies.includes(username)) {
+                    registeredCookies = chunk.toString();
+                }
+            });
         }
 
         // open browser
@@ -163,7 +171,7 @@ export default class TwitterClient implements ITwitterClient
                         cCs.add(cC);
                     });
                     var jsonCookies = JSON.stringify(cCs);
-                    fs.writeFileSync('./cookies.json', jsonCookies);
+                    fs.writeFileSync(this.cookies.toString(), jsonCookies);
                 });
             } else if (this.cookies instanceof Duplex) {
                 var cCs = new List<CustomCookie>();
@@ -194,7 +202,6 @@ export default class TwitterClient implements ITwitterClient
 
     }
     
-
     public CreateCompose(): ComposePage
     {
         this.logger.Log('Creating Compose Page', LogLevel.Info);
@@ -228,6 +235,7 @@ export default class TwitterClient implements ITwitterClient
             });
             return true;
         } catch {
+            
             return false;
         }
 

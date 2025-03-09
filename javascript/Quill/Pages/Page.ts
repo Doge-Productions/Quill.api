@@ -2,9 +2,8 @@ import TwitterClient from "../TwitterClient";
 import DriverCreation from "../DriverCreation";
 import { WebDriver, IWebDriverOptionsCookie } from "selenium-webdriver";
 import { PageType } from "../Pages";
-import { List } from "../tools";
-import fs from 'fs';
-import { Duplex } from 'stream';
+import { List, LogLevel } from "../tools";
+import { CookieHandler, CustomCookie } from "../cookieHandler";
 
 /**
  * The base class for all pages
@@ -13,7 +12,7 @@ export abstract class Page
 {
     /** The cookies used to login
     */
-    public cookies?: string | fs.WriteStream | Duplex;
+    public cookiHandler: CookieHandler;
     /** The driver used to interact with the page
     */
     public driver?: WebDriver;
@@ -32,7 +31,7 @@ export abstract class Page
 
     protected constructor(client: TwitterClient)
     {
-        this.cookies = client.cookies;
+        this.cookiHandler = client.cookieHandler;
         this.driver = DriverCreation.CreateNew();
         this.pageType = PageType.None;
         this.client = client;
@@ -45,31 +44,23 @@ export abstract class Page
     protected async init(): Promise<void> {
         this.driver?.navigate().to("https://x.com");
 
-        let savedCookie: List<CustomCookie>;
-        if (this.cookies instanceof Duplex) {
-            const chunks: Buffer[] = [];
-            this.cookies.on('data', chunk => chunks.push(chunk));
-            this.cookies.on('end', () => {
-                const data = Buffer.concat(chunks).toString();
-                savedCookie = JSON.parse(data);
-                this.addCookiesToDriver(savedCookie);
-            });
-        } else {
-            savedCookie = JSON.parse(this.cookies as string);
-            this.addCookiesToDriver(savedCookie);
-        }
-    }
-
-    private async addCookiesToDriver(savedCookie: List<CustomCookie>): Promise<void> {
-        for (let cookie of savedCookie)
-        {
-            var customCookie = new CustomCookie(cookie);
-            var seleniumCookie = customCookie.toSeleniumCookie();
+        //cookie loading
+        await this.cookiHandler.cookies.forEach(async (cookie) => {
+            var seleniumCookie = cookie.toSeleniumCookie();
             this.driver?.manage().addCookie(seleniumCookie);
-        }
+        });
 
-        this.driver?.navigate().to("https://x.com");
+        await this.driver?.navigate().to("https://x.com");
+        
+        //Load cookies
+        this.cookiHandler.cookies.forEach(async (cookie) => {
+            var seleniumCookie = cookie.toSeleniumCookie();
+            this.driver?.manage().addCookie(seleniumCookie);
+        });
+
+        await this.driver?.navigate().refresh();
         await this.driver?.wait(async () => (await this.driver?.getCurrentUrl()) === "https://x.com", 10000);
+        
     }
 
     /** this will reload the page
@@ -129,7 +120,7 @@ export abstract class Page
     */
     public async destroy(): Promise<void> {
         await this.close();
-        this.cookies = undefined;
+        this.cookiHandler.cookies.clear();
         this.driver = undefined;
         this.pageType = undefined;
         this.client = undefined;
@@ -138,43 +129,3 @@ export abstract class Page
     
 }
     
-export class CustomCookie
-{
-    public name!: string;
-    public value!: string;
-    public path?: string | undefined;
-    public domain?: string | undefined;
-    public secure?: boolean | undefined;
-    public httpOnly?: boolean | undefined;
-    public expiry?: Date | number | undefined;
-    public sameSite?: string | undefined;
-
-    constructor(cookie?: IWebDriverOptionsCookie)
-    {
-        if (cookie)
-        {
-            this.name = cookie.name;
-            this.value = cookie.value;
-            this.path = cookie.path;
-            this.domain = cookie.domain;
-            this.secure = cookie.secure;
-            this.httpOnly = cookie.httpOnly;
-            this.expiry = cookie.expiry;
-            this.sameSite = cookie.sameSite;
-        }
-    }
-
-    toSeleniumCookie(): IWebDriverOptionsCookie 
-    {
-        return {
-            name: this.name,
-            value: this.value,
-            path: this.path,
-            domain: this.domain,
-            secure: this.secure,
-            httpOnly: this.httpOnly,
-            expiry: this.expiry,
-            sameSite: this.sameSite
-        };   
-    }
-}

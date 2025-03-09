@@ -1,11 +1,11 @@
 import fs from 'fs';
-import path, { resolve } from 'path';
+import path from 'path';
 import { List, Logger, LogLevel, Stream } from './tools';
-import { CustomCookie, Page } from './Pages';
+import { Page } from './Pages';
 import { WebDriver, until, By, Actions, Builder } from 'selenium-webdriver';
 import DriverCreation from './DriverCreation';
 import ComposePage from './Pages/ComposePage';
-import { Duplex } from 'stream';
+import { CustomCookie, CookieHandler } from './cookieHandler';
 
 export default class TwitterClient implements ITwitterClient
 {
@@ -19,8 +19,7 @@ export default class TwitterClient implements ITwitterClient
     public password: string;
     /* The cookies used to login with
     */
-    public cookies: string | fs.WriteStream | Duplex;
-    private cookieIsDuplex: boolean = false;
+    public cookieHandler: CookieHandler;
     public pages: List<Page>;
     
     /** The Logger Class Used */
@@ -33,20 +32,26 @@ export default class TwitterClient implements ITwitterClient
     * @param cookies The cookies used to login with
     */
     constructor(); // << SIG
-    constructor(username: string, username2: string, password: string, cookies: string); // << Implamintation Signature
-    constructor(username: string, username2: string, password: string, cookies: fs.WriteStream); // << Implimentatin Signature
-    constructor(username?: string, username2?: string, password?: string, cookies?: string | fs.WriteStream | Duplex ) { // << IMPL
-        
+    constructor(username: string, username2: string, password: string, cookieHandler: CookieHandler); // << Implamintation Signature
+    constructor(username: string, username2: string, password: string); // << Implimentatin Signature
+    constructor(username?: string, username2?: string, password?: string, cookieHandl?: CookieHandler) { // << IMPL
+        if(!cookieHandl)
+        {
+            this.cookieHandler = new CookieHandler(path.join(__dirname, 'cookies.json'));
+        }
+        else
+            this.cookieHandler = cookieHandl;
+
         this.username = username || '';
         this.username2 = username2 || '';
         this.password = password || '';
-        this.cookies = cookies ?? '';
         this.pages = new List<Page>();
         this.logger = new Logger();
     }
 
 
     /** ------ Logs you into the client. ------
+     * the Peramaters Below ARE IF YOU DIDNT SET THEM IN THE CONSTRUCTOR
      * @param username1 This will be used first to sign in. This is preferably a username (handle, \@) but could also be an email or phone number
      * @param username2 This will be used if prompted with the suspicious activity screen. **THIS HAS TO BE DIFFERENT THAN THE FIRST!!** This could be an email, phone number, or username (handle, \@)
      * @param accountPassword The password of the account you want to use.
@@ -54,29 +59,9 @@ export default class TwitterClient implements ITwitterClient
     public async Login(): Promise<void>; // << SIG
     public async Login(username1: string, username2: string, accountPassword: string): Promise<void>; // << SIG
     public async Login(username1?: string, username2?: string, accountPassword?: string): Promise<void> { // << IMPL
-        var username: string = username1!;
-        var password: string = accountPassword!;
-        let registeredCookies: string | undefined;
-
-        if (typeof(this.cookies) == 'string' || this.cookies instanceof fs.WriteStream && this.cookies !instanceof Duplex) {
-            const cookieFilePath = path.join(__dirname, 'cookies.json');
-            if (fs.existsSync(cookieFilePath)) {
-                const cookies = await fs.readFileSync(cookieFilePath, 'utf8');
-                const parsedCookies = JSON.parse(cookies);
-                if (parsedCookies.includes(username)) {
-                    registeredCookies = cookies;
-                }
-            }
-        } else if (this.cookies instanceof Duplex) {
-            this.cookieIsDuplex = true;
-            this.logger.Log('Cookies is a Duplex Stream', LogLevel.Info);
-            this.cookies.on('data', (chunk: Buffer) => {
-                const cookies = JSON.parse(chunk.toString());
-                if (cookies.includes(username)) {
-                    registeredCookies = chunk.toString();
-                }
-            });
-        }
+        var username: string = username1 || this.username!;
+        var username2: string | undefined = username2 || this.username2!;
+        var password: string = accountPassword || this.password!;
 
         // open browser
         this.logger.Log('Opening Browser', LogLevel.Info);
@@ -162,28 +147,13 @@ export default class TwitterClient implements ITwitterClient
             }
          
 
-            // cookies saving
-            if (typeof this.cookies == 'string' || this.cookies instanceof fs.WriteStream) {
-                var cCs = new List<CustomCookie>();
-                driver?.manage().getCookies().then(async cookies => {
-                    cookies.forEach(async cookie => {
-                        var cC = new CustomCookie(cookie);
-                        cCs.add(cC);
-                    });
-                    var jsonCookies = JSON.stringify(cCs);
-                    fs.writeFileSync(this.cookies.toString(), jsonCookies);
-                });
-            } else if (this.cookies instanceof Duplex) {
-                var cCs = new List<CustomCookie>();
-                driver?.manage().getCookies().then(async cookies => {
-                    cookies.forEach(async cookie => {
-                        var cC = new CustomCookie(cookie);
-                        cCs.add(cC);
-                    });
-                    var jsonCookies = JSON.stringify(cCs);
-                    (this.cookies as Duplex).push(Buffer.from(jsonCookies));
-                });
-            }
+            //TODO: cookies saving
+            var cookies = await driver?.manage().getCookies();
+            this.cookieHandler.cookies.clear();
+            cookies.forEach(cookie => {
+                this.cookieHandler.cookies.add(new CustomCookie(cookie));
+            });
+        
 
         }
         catch (err)
@@ -277,8 +247,7 @@ interface ITwitterClient
 
     /* The cookies used to login with
     */
-    cookies: string | fs.WriteStream | Duplex;
-
+    cookieHandler: CookieHandler;
     pages: List<Page>;
 
     Login(username1: string, username2: string, password: string): Promise<void>;

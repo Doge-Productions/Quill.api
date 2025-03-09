@@ -21,6 +21,11 @@ export class List<T>
     {
         this.items = this.items.filter(item => item !== value);
     }
+
+    clear(): void
+    {
+        this.items = [];
+    }
     
     get(index: number): T
     {

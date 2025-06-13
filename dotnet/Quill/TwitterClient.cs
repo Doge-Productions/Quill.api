@@ -213,11 +213,11 @@ namespace Quill
                 new WebDriverWait(driver, TimeSpan.FromDays(1)).Until(SeleniumExtras.WaitHelpers.ExpectedConditions.ElementToBeClickable(By.XPath("(//h1[@role='heading'])[1]")));
 
 
-                List<CustomCookie> cCs = new List<CustomCookie>();
+                List<QuillCookie> cCs = new List<QuillCookie>();
                 cCs.Capacity = driver.Manage().Cookies.AllCookies.Count;
                 foreach (OpenQA.Selenium.Cookie cook in driver.Manage().Cookies.AllCookies)
                 {
-                    cCs.Add(new CustomCookie(cook));
+                    cCs.Add(new QuillCookie(cook));
                 }
 
                 cookies = System.Text.Json.JsonSerializer.Serialize(cCs, new JsonSerializerOptions { WriteIndented = true });

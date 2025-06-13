@@ -1,15 +1,7 @@
 ﻿//using Newtonsoft.Json;
 using OpenQA.Selenium;
-using OpenQA.Selenium.Firefox;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Linq;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace Quill.Pages
 {
@@ -42,10 +34,7 @@ namespace Quill.Pages
 
         public bool sleeping { get; protected set; }
 
-        protected Page(TwitterClient client) : this(client, "https://x.com")
-        {
-            
-        }
+        protected Page(TwitterClient client) : this(client, "https://x.com") { }
 
 
         protected Page(TwitterClient client, string baseUrl)
@@ -57,7 +46,10 @@ namespace Quill.Pages
             this.client = client;
             driver.Navigate().GoToUrl("https://x.com");
 
-            var savedCookies = JsonSerializer.Deserialize<List<CustomCookie>>(cookies);
+            var savedCookies = JsonSerializer.Deserialize<List<QuillCookie>>(cookies);
+
+            if (savedCookies is null)
+                throw new Exception("Saved cookies unable to be deserialized");
 
             foreach (var customCookie in savedCookies)
             {
@@ -68,9 +60,7 @@ namespace Quill.Pages
             for (int i = 0; driver.Url != baseUrl && i < 10; i++)
             {
                 driver.Navigate().GoToUrl(baseUrl);
-                //Thread.Sleep(50);
             }
-
         }
 
         protected void CreatePage(TwitterClient client)
@@ -81,7 +71,10 @@ namespace Quill.Pages
             this.client = client;
             driver.Navigate().GoToUrl("https://x.com/");
 
-            var savedCookies = JsonSerializer.Deserialize<List<CustomCookie>>(cookies);
+            var savedCookies = JsonSerializer.Deserialize<List<QuillCookie>>(cookies);
+
+            if (savedCookies is null)
+                throw new Exception("Saved cookies unable to be deserialized");
 
             foreach (var customCookie in savedCookies)
             {
@@ -89,11 +82,10 @@ namespace Quill.Pages
                 driver.Manage().Cookies.AddCookie(seleniumCookie);
             }
 
-
             for (int i = 0; driver.Url != "https://x.com/home" && i < 10; i++)
             {
-                driver.Navigate().GoToUrl("https://x.com/");                
-            }           
+                driver.Navigate().GoToUrl("https://x.com/");
+            }
         }
 
         public void Reload()
@@ -141,8 +133,8 @@ namespace Quill.Pages
         public void AwakeDriver()
         {
             sleeping = false;
-            CreatePage(client); 
-            driver.Navigate().GoToUrl(baseUrl); 
+            CreatePage(client);
+            driver.Navigate().GoToUrl(baseUrl);
         }
 
         ~Page()
@@ -156,19 +148,19 @@ namespace Quill.Pages
         }
     }
 
-    internal class CustomCookie
+    internal class QuillCookie
     {
         [JsonPropertyName("name")]
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
 
         [JsonPropertyName("value")]
-        public string Value { get; set; }
+        public string Value { get; set; } = string.Empty;
 
         [JsonPropertyName("domain")]
-        public string Domain { get; set; }
+        public string Domain { get; set; } = string.Empty;
 
         [JsonPropertyName("path")]
-        public string Path { get; set; }
+        public string Path { get; set; } = string.Empty;
 
         [JsonPropertyName("expiry")]
         public long Expiry { get; set; }
@@ -179,15 +171,15 @@ namespace Quill.Pages
         [JsonPropertyName("httpOnly")]
         public bool IsHttpOnly { get; set; }
 
-        public CustomCookie() { }
+        public QuillCookie() { }
 
-        public CustomCookie(Cookie cookie)
+        public QuillCookie(Cookie cookie)
         {
             Name = cookie.Name;
             Value = cookie.Value;
             Domain = cookie.Domain;
             Path = cookie.Path;
-            if(cookie.Expiry != null)
+            if (cookie.Expiry != null)
                 Expiry = cookie.Expiry.Value.ToFileTime();
             Secure = cookie.Secure;
             IsHttpOnly = cookie.IsHttpOnly;
@@ -199,7 +191,7 @@ namespace Quill.Pages
             {
                 DateTime? expiry = DateTime.FromFileTime(Expiry);
 
-                if(expiry.Value.ToFileTime() == 0)
+                if (expiry.Value.ToFileTime() == 0)
                 {
                     expiry = DateTime.Now;
                     expiry = expiry.Value.Add(TimeSpan.FromDays(365));

@@ -263,10 +263,8 @@ namespace Quill
 
         public void CloseAllPages()
         {
-            foreach(Page apge in pages)
-            {
-                apge.Close();               
-            }
+            for (int i = pages.Count - 1; i >= 0; i--)                            
+                pages[i].Close();                           
         }
         /// <summary>
         /// Used to safely close the client to prevent memory leaks

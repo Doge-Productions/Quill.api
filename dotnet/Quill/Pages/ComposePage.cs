@@ -1,6 +1,5 @@
 ﻿using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
-using OpenQA.Selenium.DevTools.V129.Storage;
 using OpenQA.Selenium.Edge;
 using OpenQA.Selenium.Support.UI;
 using System.Diagnostics;
@@ -80,7 +79,7 @@ namespace Quill.Pages
                 IWebElement addTweetBtn = null;
                 try
                 {
-                    addTweetBtn = new WebDriverWait(driver, TimeSpan.FromMinutes(1)).Until(SeleniumExtras.WaitHelpers.ExpectedConditions.ElementExists(By.XPath($"(//div[@aria-label='Post text'])[{1}]")));
+                    addTweetBtn = new WebDriverWait(driver, TimeSpan.FromMinutes(1)).Until(SeleniumExtras.WaitHelpers.ExpectedConditions.ElementExists(By.XPath($"(//div[@role='textbox'])[1]")));
                 }
                 catch { }
 
@@ -88,7 +87,8 @@ namespace Quill.Pages
                 int tries = 0;
                 while (tries < 10 || addTweetBtn != null)                   
                 {
-                    if (driver.FindElements(By.XPath($"(//div[@aria-label='Post text'])[{1}]")).Count <= 0)
+                    //if (driver.FindElements(By.XPath($"(//div[@aria-label='Post text'])[{1}]")).Count <= 0)
+                    if (driver.FindElements(By.XPath($"(//div[@role='textbox'])[1]")).Count <= 0)
                     {
                         SleepDriver();
                         Thread.Sleep(2000);
@@ -129,7 +129,8 @@ namespace Quill.Pages
                     }
 
                     #region Text Sending
-                    var textBox = driver.FindElement(By.XPath($"(//div[@aria-label='Post text'])[{i + 1}]"));
+                   // var textBox = driver.FindElement(By.XPath($"(//div[@aria-label='Post text'])[{i + 1}]"));
+                    var textBox = driver.FindElement(By.XPath($"(//div[@role='textbox'])[{i + 1}]"));
                     textBox.Click();
 
                     if (driver.GetType() == typeof(ChromeDriver) || driver.GetType() == typeof(EdgeDriver) || driver.GetType() == typeof(ChromeDriver))
@@ -152,9 +153,11 @@ namespace Quill.Pages
                         else if (firstFileType == "gif")
                             mediaMode = MediaMode.Gif;
 
-                        while (driver.FindElements(By.XPath($"(//button[@aria-label='Add photos or video'])[{i + 1}]")).Count == 0) ;
+                        //while (driver.FindElements(By.XPath($"(//button[@aria-label='Add photos or video'])[{i + 1}]")).Count == 0) ;
+                        //while (driver.FindElements(By.XPath($"(//button[@aria-label='Add photos or video'])[{i + 1}]")).Count == 0) ;
                         //putting in the media                                                                                                                              (//button[@aria-label='Add photos or video'])[1]
-                        IWebElement imageBtn = new WebDriverWait(driver, TimeSpan.FromDays(1)).Until(SeleniumExtras.WaitHelpers.ExpectedConditions.ElementExists(By.XPath($"(//button[@aria-label='Add photos or video'])[{i + 1}]")));
+                        IWebElement imageBtn = new WebDriverWait(driver, TimeSpan.FromDays(1)).Until(SeleniumExtras.WaitHelpers.ExpectedConditions.ElementExists(By.XPath($"(//input[@type='file'])[{i + 1}]")));
+                        // IWebElement imageBtn = new WebDriverWait(driver, TimeSpan.FromDays(1)).Until(SeleniumExtras.WaitHelpers.ExpectedConditions.ElementExists(By.XPath($"(//button[@aria-label='Add photos or video'])[{i + 1}]")));
                         //var imageBtn = driver.FindElement(By.XPath($"(//div[@aria-label='Add photos or video'])[{i + 1}]"));
 
                         for (int j = 0; j < data.media.Length; j++)

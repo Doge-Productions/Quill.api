@@ -283,16 +283,8 @@ namespace Quill
         {         
             try
             {
-                url ??= CultureInfo.InstalledUICulture switch
-                {
-                    { Name: var n } when n.StartsWith("fa") => // Iran
-                        "http://www.aparat.com",
-                    { Name: var n } when n.StartsWith("zh") => // China
-                        "http://www.baidu.com",
-                    _ =>
-                        "http://www.gstatic.com/generate_204",
-                };
-
+                url ??= "https://x.com/";
+                
                 var request = (HttpWebRequest)WebRequest.Create(url);
                 request.KeepAlive = false;
                 request.Timeout = timeoutMs;
